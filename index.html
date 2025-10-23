@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>neverthrow Error Handling Patterns Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,0.9);
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
+    }
+
+    .demo-section {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .demo-section h2 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 1.5rem;
+    }
+
+    .demo-section h3 {
+      color: #764ba2;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .demo-section p {
+      color: #666;
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+
+    .explanation-box {
+      background: #f0f4ff;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+
+    .explanation-box h4 {
+      color: #667eea;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .explanation-box p {
+      color: #555;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .explanation-box ul {
+      margin-left: 20px;
+      color: #555;
+      font-size: 0.9rem;
+    }
+
+    .explanation-box li {
+      margin-bottom: 4px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.secondary {
+      background: #a0aec0;
+    }
+
+    button.secondary:hover {
+      background: #718096;
+    }
+
+    input, select {
+      padding: 10px;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .output {
+      background: #f7fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 15px;
+      min-height: 80px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    .success {
+      color: #38a169;
+      font-weight: 500;
+    }
+
+    .error {
+      color: #e53e3e;
+      font-weight: 500;
+    }
+
+    .info {
+      color: #3182ce;
+    }
+
+    .log-line {
+      margin: 4px 0;
+      padding: 4px 0;
+    }
+
+    .indent {
+      margin-left: 20px;
+    }
+
+    .code-block {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .badge-enum { background: #fef3c7; color: #92400e; }
+    .badge-union { background: #dbeafe; color: #1e40af; }
+    .badge-multi { background: #e9d5ff; color: #6b21a8; }
+
+    .test-scenarios {
+      background: #fef5e7;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+
+    .test-scenarios h4 {
+      color: #d97706;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+
+    .scenario-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .scenario-buttons button {
+      justify-content: flex-start;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 neverthrow Error Handling Patterns</h1>
+    <p class="subtitle">Interactive demonstration of type-safe error handling in TypeScript</p>
+
+    <!-- Section 1: Simple Enum Errors -->
+    <div class="demo-section">
+      <h2><span class="badge badge-enum">Pattern 1</span>Simple Enum Error Types</h2>
+      
+      <p>
+        The simplest error handling pattern uses <strong>string literal unions</strong> to represent different error states. 
+        This is perfect when you just need to distinguish between different failure modes without carrying additional context.
+      </p>
+
+      <div class="code-block">type AuthError = 'InvalidCredentials' | 'AccountLocked' | 'SessionExpired';
+
+function authenticate(username: string, password: string): Result&lt;User, AuthError&gt; {
+  if (!password || password.length &lt; 8) {
+    return err('InvalidCredentials');
+  }
+  
+  if (username === 'locked_user') {
+    return err('AccountLocked');
+  }
+  
+  return ok({ id: '123', name: username, email: `${username}@example.com` });
+}</div>
+
+      <div class="explanation-box">
+        <h4>🔍 What's happening under the hood:</h4>
+        <p>When the authentication function runs, it checks conditions in order:</p>
+        <ul>
+          <li><strong>Password validation:</strong> If the password is missing or less than 8 characters, returns <code>err('InvalidCredentials')</code></li>
+          <li><strong>Account status check:</strong> If the username is 'locked_user', returns <code>err('AccountLocked')</code></li>
+          <li><strong>Success case:</strong> If all checks pass, returns <code>ok(user)</code> with user data</li>
+        </ul>
+        <p>The Result type forces you to handle both success and error cases explicitly using <code>.match()</code> or other combinators.</p>
+      </div>
+
+      <h3>Try it yourself:</h3>
+      <div class="controls">
+        <input type="text" id="username" placeholder="Username" value="alice">
+        <input type="password" id="password" placeholder="Password (min 8 chars)" value="password123">
+        <button onclick="handleSimpleAuth()">Authenticate</button>
+      </div>
+
+      <div class="test-scenarios">
+        <h4>Test different error scenarios:</h4>
+        <div class="scenario-buttons">
+          <button class="secondary" onclick="handleSimpleAuth('alice', 'password123')">✅ Valid Login (password123)</button>
+          <button class="secondary" onclick="handleSimpleAuth('locked_user', 'password123')">🔒 Locked Account Error</button>
+          <button class="secondary" onclick="handleSimpleAuth('bob', 'short')">❌ Invalid Credentials (password too short)</button>
+        </div>
+      </div>
+      
+      <div id="simple-output" class="output"></div>
+
+      <div class="explanation-box">
+        <h4>✨ Why use simple enum errors?</h4>
+        <ul>
+          <li><strong>TypeScript exhaustiveness checking:</strong> The compiler ensures you handle all error cases in switch statements</li>
+          <li><strong>Minimal overhead:</strong> Just string literals, no complex objects</li>
+          <li><strong>Clear intent:</strong> Error types are self-documenting</li>
+          <li><strong>Perfect for binary conditions:</strong> When you don't need to pass extra data about what went wrong</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Section 2: Union Error Types with Data -->
+    <div class="demo-section">
+      <h2><span class="badge badge-union">Pattern 2</span>Union Error Types with Data</h2>
+      
+      <p>
+        When errors need context, use <strong>discriminated unions</strong>. Each error type is an object with a <code>type</code> field 
+        (the discriminator) plus additional fields carrying relevant information. This lets you pass detailed error information up the call stack.
+      </p>
+
+      <div class="code-block">type ValidationError = {
+  type: 'ValidationError';
+  field: string;
+  message: string;
+  attemptedValue: unknown;
+};
+
+type NotFoundError = {
+  type: 'NotFoundError';
+  resource: string;
+  id: string;
+};
+
+type DatabaseError = {
+  type: 'DatabaseError';
+  query: string;
+  originalError: Error;
+};
+
+type AppError = ValidationError | NotFoundError | DatabaseError;</div>
+
+      <div class="explanation-box">
+        <h4>🔍 What's happening under the hood:</h4>
+        <p>This pattern chains multiple operations that can each fail with different error types:</p>
+        <ul>
+          <li><strong>Step 1 - Find product:</strong> Searches for product by ID, can return <code>NotFoundError</code> or <code>DatabaseError</code></li>
+          <li><strong>Step 2 - Validate product:</strong> If found, validates the update data, can return <code>ValidationError</code></li>
+          <li><strong>Error propagation:</strong> If either step fails, the error (with all its context) is returned immediately</li>
+          <li><strong>Success case:</strong> Only if both steps succeed do we get the updated product</li>
+        </ul>
+        <p>The <code>.match()</code> method uses TypeScript's discriminated unions to give you type-safe access to error-specific fields.</p>
+      </div>
+
+      <h3>Try it yourself:</h3>
+      <div class="controls">
+        <input type="text" id="product-id" placeholder="Product ID" value="123">
+        <input type="text" id="product-name" placeholder="Product Name" value="Widget">
+        <input type="number" id="product-price" placeholder="Price" value="99.99" step="0.01">
+        <button onclick="handleUpdateProduct()">Update Product</button>
+      </div>
+
+      <div class="test-scenarios">
+        <h4>Test different error scenarios:</h4>
+        <div class="scenario-buttons">
+          <button class="secondary" onclick="handleUpdateProduct('123', 'Gadget', '149.99')">✅ Valid Update (ID 123 exists)</button>
+          <button class="secondary" onclick="handleUpdateProduct('456', 'Gadget', '149.99')">🔍 Not Found Error (ID doesn't exist)</button>
+          <button class="secondary" onclick="handleUpdateProduct('123', '', '50')">📝 Validation Error (empty name)</button>
+          <button class="secondary" onclick="handleUpdateProduct('123', 'Test', '-10')">📝 Validation Error (negative price)</button>
+          <button class="secondary" onclick="handleUpdateProduct('error', 'Test', '100')">💥 Database Error (simulated failure)</button>
+        </div>
+      </div>
+      
+      <div id="union-output" class="output"></div>
+
+      <div class="explanation-box">
+        <h4>✨ Why use union error types with data?</h4>
+        <ul>
+          <li><strong>Rich error context:</strong> Pass field names, attempted values, original errors, etc.</li>
+          <li><strong>Debugging friendly:</strong> All the information you need to diagnose issues is attached to the error</li>
+          <li><strong>Type-safe error handling:</strong> TypeScript narrows the type based on the discriminator, giving you autocomplete for error-specific fields</li>
+          <li><strong>Composable:</strong> Different functions can return different error types, and they compose naturally via union types</li>
+          <li><strong>No exceptions:</strong> All error paths are explicit in the type signature</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Section 3: Multiple Results -->
+    <div class="demo-section">
+      <h2><span class="badge badge-multi">Pattern 3</span>Coalescing Multiple Results</h2>
+      
+      <p>
+        When processing multiple operations at once, neverthrow provides utilities to combine results. You can either 
+        <strong>fail fast</strong> (stop at first error) or <strong>collect all errors</strong> (continue through all operations).
+      </p>
+
+      <div class="code-block">// Fail fast - stops at first error
+Result.combine(results): Result&lt;T[], E&gt;
+
+// Collect all errors - continues through all operations
+Result.combineWithAllErrors(results): Result&lt;T[], E[]&gt;</div>
+
+      <div class="explanation-box">
+        <h4>🔍 What's happening under the hood:</h4>
+        <p><strong>Result.combine():</strong></p>
+        <ul>
+          <li>Processes results in order until it hits the first error</li>
+          <li>Returns immediately with that error (fail-fast behavior)</li>
+          <li>If all succeed, returns <code>ok([...all values])</code></li>
+          <li>Error type is singular: <code>Result&lt;T[], E&gt;</code></li>
+        </ul>
+        <p><strong>Result.combineWithAllErrors():</strong></p>
+        <ul>
+          <li>Processes ALL results regardless of failures</li>
+          <li>Collects every error into an array</li>
+          <li>Only returns ok if ALL operations succeeded</li>
+          <li>Error type is an array: <code>Result&lt;T[], E[]&gt;</code></li>
+        </ul>
+        <p><strong>Manual accumulation:</strong></p>
+        <ul>
+          <li>Useful when you want partial success (some items valid, some invalid)</li>
+          <li>Gives you both the successful results AND all the errors</li>
+          <li>Perfect for validation scenarios where you want to show all issues at once</li>
+        </ul>
+      </div>
+
+      <h3>Try it yourself:</h3>
+      <div class="controls">
+        <label style="display: flex; align-items: center; gap: 8px;">
+          Order IDs (comma-separated):
+          <input type="text" id="order-ids" placeholder="123,456,789" value="123,456,789" style="width: 300px;">
+        </label>
+      </div>
+
+      <div class="test-scenarios">
+        <h4>Test different combination strategies:</h4>
+        <div class="scenario-buttons">
+          <button class="secondary" onclick="handleCombine()">⚡ Result.combine() - Fail Fast (stops at first error)</button>
+          <button class="secondary" onclick="handleCombineWithAllErrors()">📋 Result.combineWithAllErrors() - Collect All Errors</button>
+          <button class="secondary" onclick="handleManualValidation()">🔍 Manual Validation - Accumulate valid + invalid items</button>
+          <button class="secondary" onclick="handleProcessingReport()">📊 Processing Report - Detailed success/failure breakdown</button>
+        </div>
+      </div>
+
+      <div class="explanation-box">
+        <h4>💡 Test with different order IDs:</h4>
+        <ul>
+          <li><code>123,456,789</code> - Try all invalid IDs (except 123) to see multiple errors</li>
+          <li><code>123</code> - Single valid ID (all succeed)</li>
+          <li><code>123,456</code> - Mix of valid and invalid</li>
+          <li><code>error,123,456</code> - Database error followed by other errors</li>
+        </ul>
+        <p><strong>Remember:</strong> Only ID '123' is valid. Any other ID will produce a NotFoundError. ID 'error' produces a DatabaseError.</p>
+      </div>
+      
+      <div id="multi-output" class="output"></div>
+
+      <div class="explanation-box">
+        <h4>✨ When to use each strategy:</h4>
+        <p><strong>Use Result.combine() when:</strong></p>
+        <ul>
+          <li>You need all operations to succeed for the result to be valid</li>
+          <li>Early termination saves resources (e.g., no point continuing if first step fails)</li>
+          <li>You only care about the first error</li>
+        </ul>
+        <p><strong>Use Result.combineWithAllErrors() when:</strong></p>
+        <ul>
+          <li>You want to show users ALL validation errors at once</li>
+          <li>Each operation is independent (e.g., validating form fields)</li>
+          <li>You need a complete picture of what went wrong</li>
+        </ul>
+        <p><strong>Use manual accumulation when:</strong></p>
+        <ul>
+          <li>Partial success is acceptable (some items can fail)</li>
+          <li>You want to process what succeeded AND report what failed</li>
+          <li>You need custom aggregation logic beyond just arrays</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="demo-section">
+      <h2>🎓 Summary</h2>
+      <p>neverthrow provides three main patterns for type-safe error handling:</p>
+      
+      <div class="explanation-box">
+        <h4>1️⃣ Simple Enum Errors</h4>
+        <p>Use when errors don't need extra data. Fast, simple, TypeScript-exhaustive.</p>
+      </div>
+
+      <div class="explanation-box">
+        <h4>2️⃣ Union Error Types with Data</h4>
+        <p>Use when errors need context. Provides rich debugging information while maintaining type safety.</p>
+      </div>
+
+      <div class="explanation-box">
+        <h4>3️⃣ Combining Multiple Results</h4>
+        <p>Use when processing multiple operations. Choose between fail-fast and collect-all-errors based on your needs.</p>
+      </div>
+
+      <p style="margin-top: 20px;">
+        <strong>The key benefit:</strong> All error paths are explicit in your type signatures. No silent failures, no forgotten error handling, 
+        no exceptions bubbling up unexpectedly. TypeScript forces you to handle every error case, making your code more reliable.
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import neverthrow from ESM CDN
+    import * as neverthrow from 'https://esm.sh/neverthrow@8.0.0';
+    
+    const { ok, err, Result } = neverthrow;
+
+    // ============================================================================
+    // Pattern 1: Simple Enum Error Types
+    // ============================================================================
+    
+    function authenticate(username, password) {
+      if (!password || password.length < 8) {
+        return err('InvalidCredentials');
+      }
+      
+      if (username === 'locked_user') {
+        return err('AccountLocked');
+      }
+      
+      return ok({
+        id: '123',
+        name: username,
+        email: `${username}@example.com`
+      });
+    }
+
+    function handleSimpleAuth(user, pass) {
+      const username = user || document.getElementById('username').value;
+      const password = pass || document.getElementById('password').value;
+      const output = document.getElementById('simple-output');
+      
+      const result = authenticate(username, password);
+      
+      const lines = [];
+      lines.push(`<div class="log-line info">→ Authenticating user: "${username}" with password "${password}"</div>`);
+      lines.push(`<div class="log-line indent">Checking: password length >= 8 characters...</div>`);
+      
+      if (password && password.length >= 8) {
+        lines.push(`<div class="log-line indent success">✓ Password length check passed</div>`);
+        lines.push(`<div class="log-line indent">Checking: account not locked...</div>`);
+        
+        if (username === 'locked_user') {
+          lines.push(`<div class="log-line indent error">✗ Account is locked</div>`);
+        } else {
+          lines.push(`<div class="log-line indent success">✓ Account status check passed</div>`);
+        }
+      } else {
+        lines.push(`<div class="log-line indent error">✗ Password length check failed (got ${password ? password.length : 0} characters)</div>`);
+      }
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      
+      result.match(
+        (user) => {
+          lines.push(`<div class="log-line success">✓ Authentication successful!</div>`);
+          lines.push(`<div class="log-line indent">Returned: ok(User)</div>`);
+          lines.push(`<div class="log-line indent">User ID: ${user.id}</div>`);
+          lines.push(`<div class="log-line indent">User Name: ${user.name}</div>`);
+          lines.push(`<div class="log-line indent">User Email: ${user.email}</div>`);
+        },
+        (error) => {
+          lines.push(`<div class="log-line error">✗ Authentication failed</div>`);
+          lines.push(`<div class="log-line indent">Returned: err('${error}')</div>`);
+          switch (error) {
+            case 'InvalidCredentials':
+              lines.push(`<div class="log-line indent">Error Type: InvalidCredentials</div>`);
+              lines.push(`<div class="log-line indent">Reason: Password must be at least 8 characters</div>`);
+              break;
+            case 'AccountLocked':
+              lines.push(`<div class="log-line indent">Error Type: AccountLocked</div>`);
+              lines.push(`<div class="log-line indent">Reason: This account has been locked</div>`);
+              break;
+            case 'SessionExpired':
+              lines.push(`<div class="log-line indent">Error Type: SessionExpired</div>`);
+              lines.push(`<div class="log-line indent">Reason: Please log in again</div>`);
+              break;
+          }
+        }
+      );
+      
+      output.innerHTML = lines.join('');
+    }
+
+    // Make functions globally available for onclick handlers
+    window.handleSimpleAuth = handleSimpleAuth;
+    window.handleUpdateProduct = handleUpdateProduct;
+    window.handleCombine = handleCombine;
+    window.handleCombineWithAllErrors = handleCombineWithAllErrors;
+    window.handleManualValidation = handleManualValidation;
+    window.handleProcessingReport = handleProcessingReport;
+
+    // ============================================================================
+    // Pattern 2: Union Error Types with Data
+    // ============================================================================
+    
+    function validateProduct(data) {
+      if (!data.name || typeof data.name !== 'string' || data.name.trim() === '') {
+        return err({
+          type: 'ValidationError',
+          field: 'name',
+          message: 'Product name must be a non-empty string',
+          attemptedValue: data.name
+        });
+      }
+      
+      if (data.price === undefined || data.price === null || typeof data.price !== 'number' || data.price <= 0) {
+        return err({
+          type: 'ValidationError',
+          field: 'price',
+          message: 'Price must be a positive number',
+          attemptedValue: data.price
+        });
+      }
+      
+      return ok({
+        id: data.id || Math.random().toString(36).substr(2, 9),
+        name: data.name,
+        price: data.price
+      });
+    }
+
+    function findProduct(id) {
+      if (id === 'error') {
+        return err({
+          type: 'DatabaseError',
+          query: `SELECT * FROM products WHERE id = '${id}'`,
+          originalError: 'Connection timeout'
+        });
+      }
+      
+      if (id !== '123') {
+        return err({
+          type: 'NotFoundError',
+          resource: 'Product',
+          id: id
+        });
+      }
+      
+      return ok({ id, name: 'Widget', price: 99.99 });
+    }
+
+    function updateProduct(id, data) {
+      return findProduct(id).match(
+        (existingProduct) => {
+          const merged = { ...existingProduct, ...data };
+          return validateProduct(merged);
+        },
+        (error) => err(error)
+      );
+    }
+
+    function handleUpdateProduct(id, name, price) {
+      id = id || document.getElementById('product-id').value;
+      name = name || document.getElementById('product-name').value;
+      price = price !== undefined ? parseFloat(price) : parseFloat(document.getElementById('product-price').value);
+      
+      const output = document.getElementById('union-output');
+      const lines = [];
+      
+      lines.push(`<div class="log-line info">→ Starting updateProduct() operation</div>`);
+      lines.push(`<div class="log-line indent">Input: id="${id}", name="${name}", price=${price}</div>`);
+      lines.push(`<div class="log-line">───────────────</div>`);
+      
+      lines.push(`<div class="log-line info">Step 1: findProduct("${id}")</div>`);
+      const findResult = findProduct(id);
+      
+      if (findResult.isErr()) {
+        const error = findResult.error;
+        lines.push(`<div class="log-line indent error">✗ findProduct() returned err(${error.type})</div>`);
+        
+        if (error.type === 'NotFoundError') {
+          lines.push(`<div class="log-line indent">• Resource: ${error.resource}</div>`);
+          lines.push(`<div class="log-line indent">• ID: ${error.id}</div>`);
+        } else if (error.type === 'DatabaseError') {
+          lines.push(`<div class="log-line indent">• Query: ${error.query}</div>`);
+          lines.push(`<div class="log-line indent">• Error: ${error.originalError}</div>`);
+        }
+        
+        lines.push(`<div class="log-line indent info">→ Short-circuiting: skipping validation step</div>`);
+      } else {
+        lines.push(`<div class="log-line indent success">✓ findProduct() returned ok(Product)</div>`);
+        lines.push(`<div class="log-line indent">• Found: ${JSON.stringify(findResult.value)}</div>`);
+        
+        lines.push(`<div class="log-line">───────────────</div>`);
+        lines.push(`<div class="log-line info">Step 2: validateProduct() with merged data</div>`);
+        
+        const merged = { ...findResult.value, name, price };
+        lines.push(`<div class="log-line indent">Merged data: ${JSON.stringify(merged)}</div>`);
+        
+        const validateResult = validateProduct(merged);
+        
+        if (validateResult.isErr()) {
+          const error = validateResult.error;
+          lines.push(`<div class="log-line indent error">✗ validateProduct() returned err(ValidationError)</div>`);
+          lines.push(`<div class="log-line indent">• Field: ${error.field}</div>`);
+          lines.push(`<div class="log-line indent">• Message: ${error.message}</div>`);
+          lines.push(`<div class="log-line indent">• Attempted Value: ${JSON.stringify(error.attemptedValue)}</div>`);
+        } else {
+          lines.push(`<div class="log-line indent success">✓ validateProduct() returned ok(Product)</div>`);
+        }
+      }
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      
+      const result = updateProduct(id, { name, price });
+      
+      result.match(
+        (product) => {
+          lines.push(`<div class="log-line success">✓ Final Result: ok(Product)</div>`);
+          lines.push(`<div class="log-line indent">Product ID: ${product.id}</div>`);
+          lines.push(`<div class="log-line indent">Product Name: ${product.name}</div>`);
+          lines.push(`<div class="log-line indent">Product Price: $${product.price.toFixed(2)}</div>`);
+        },
+        (error) => {
+          lines.push(`<div class="log-line error">✗ Final Result: err(${error.type})</div>`);
+          lines.push(`<div class="log-line indent">The error object contains:</div>`);
+          Object.entries(error).forEach(([key, value]) => {
+            lines.push(`<div class="log-line indent">• ${key}: ${JSON.stringify(value)}</div>`);
+          });
+        }
+      );
+      
+      output.innerHTML = lines.join('');
+    }
+
+    // ============================================================================
+    // Pattern 3: Multiple Results
+    // ============================================================================
+    
+    function getOrderIds() {
+      return document.getElementById('order-ids').value.split(',').map(s => s.trim());
+    }
+
+    function handleCombine() {
+      const orderIds = getOrderIds();
+      const output = document.getElementById('multi-output');
+      const lines = [];
+      
+      lines.push(`<div class="log-line info">→ Processing ${orderIds.length} orders with Result.combine() (fail-fast)</div>`);
+      lines.push(`<div class="log-line indent">Order IDs: [${orderIds.join(', ')}]</div>`);
+      lines.push(`<div class="log-line">───────────────</div>`);
+      
+      const productResults = orderIds.map(id => {
+        const result = findProduct(id);
+        lines.push(`<div class="log-line">findProduct("${id}"): ${result.isOk() ? 'ok(Product)' : 'err(' + result.error.type + ')'}</div>`);
+        return result;
+      });
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      lines.push(`<div class="log-line info">Calling Result.combine([${productResults.length} results])</div>`);
+      
+      const combined = Result.combine(productResults);
+      
+      combined.match(
+        (products) => {
+          lines.push(`<div class="log-line success">✓ Result.combine() returned ok([${products.length} products])</div>`);
+          lines.push(`<div class="log-line indent">All operations succeeded!</div>`);
+          products.forEach((p, i) => {
+            lines.push(`<div class="log-line indent">Product ${i + 1}: ${p.name} (${p.id}) - $${p.price.toFixed(2)}</div>`);
+          });
+        },
+        (error) => {
+          lines.push(`<div class="log-line error">✗ Result.combine() returned err(${error.type})</div>`);
+          lines.push(`<div class="log-line indent">Short-circuited at first error</div>`);
+          if (error.type === 'NotFoundError') {
+            lines.push(`<div class="log-line indent">Could not find ${error.resource} with ID: ${error.id}</div>`);
+          } else if (error.type === 'DatabaseError') {
+            lines.push(`<div class="log-line indent">Database error: ${error.originalError}</div>`);
+          }
+          lines.push(`<div class="log-line indent info">Note: Result.combine() stops processing at the first error</div>`);
+        }
+      );
+      
+      output.innerHTML = lines.join('');
+    }
+
+    function handleCombineWithAllErrors() {
+      const orderIds = getOrderIds();
+      const output = document.getElementById('multi-output');
+      const lines = [];
+      
+      lines.push(`<div class="log-line info">→ Processing ${orderIds.length} orders with Result.combineWithAllErrors()</div>`);
+      lines.push(`<div class="log-line indent">Order IDs: [${orderIds.join(', ')}]</div>`);
+      lines.push(`<div class="log-line">───────────────</div>`);
+      
+      const productResults = orderIds.map(id => {
+        const result = findProduct(id);
+        lines.push(`<div class="log-line">findProduct("${id}"): ${result.isOk() ? 'ok(Product)' : 'err(' + result.error.type + ')'}</div>`);
+        return result;
+      });
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      lines.push(`<div class="log-line info">Calling Result.combineWithAllErrors([${productResults.length} results])</div>`);
+      lines.push(`<div class="log-line indent">Processing ALL results, collecting every error...</div>`);
+      
+      const combined = Result.combineWithAllErrors(productResults);
+      
+      combined.match(
+        (products) => {
+          lines.push(`<div class="log-line success">✓ Result.combineWithAllErrors() returned ok([${products.length} products])</div>`);
+          lines.push(`<div class="log-line indent">All operations succeeded!</div>`);
+          products.forEach((p, i) => {
+            lines.push(`<div class="log-line indent">Product ${i + 1}: ${p.name} (${p.id}) - $${p.price.toFixed(2)}</div>`);
+          });
+        },
+        (errors) => {
+          lines.push(`<div class="log-line error">✗ Result.combineWithAllErrors() returned err([${errors.length} errors])</div>`);
+          lines.push(`<div class="log-line indent">Collected ALL errors from the batch:</div>`);
+          errors.forEach((error, i) => {
+            lines.push(`<div class="log-line indent">${i + 1}. ${error.type}</div>`);
+            if (error.type === 'NotFoundError') {
+              lines.push(`<div class="log-line indent indent">• Resource: ${error.resource}, ID: ${error.id}</div>`);
+            } else if (error.type === 'DatabaseError') {
+              lines.push(`<div class="log-line indent indent">• Error: ${error.originalError}</div>`);
+            }
+          });
+          lines.push(`<div class="log-line indent info">Note: Result.combineWithAllErrors() continues through ALL operations</div>`);
+        }
+      );
+      
+      output.innerHTML = lines.join('');
+    }
+
+    function handleManualValidation() {
+      const output = document.getElementById('multi-output');
+      const lines = [];
+      
+      const testData = [
+        { name: 'Widget', price: 99.99 },
+        { name: '', price: 50 },
+        { name: 'Gadget', price: -10 },
+        { name: 'Doohickey', price: 25.50 }
+      ];
+      
+      lines.push(`<div class="log-line info">→ Validating ${testData.length} products with manual accumulation</div>`);
+      lines.push(`<div class="log-line indent">Strategy: Process all items, keep both valid and invalid</div>`);
+      lines.push(`<div class="log-line">───────────────</div>`);
+      
+      const validProducts = [];
+      const errors = [];
+      
+      testData.forEach((data, i) => {
+        lines.push(`<div class="log-line">Product ${i + 1}: ${JSON.stringify(data)}</div>`);
+        const result = validateProduct(data);
+        if (result.isOk()) {
+          validProducts.push(result.value);
+          lines.push(`<div class="log-line indent success">✓ Valid - added to success list</div>`);
+        } else {
+          errors.push({ index: i, error: result.error });
+          lines.push(`<div class="log-line indent error">✗ Invalid - ${result.error.field}: ${result.error.message}</div>`);
+        }
+      });
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      lines.push(`<div class="log-line success">✓ Valid products: ${validProducts.length}</div>`);
+      validProducts.forEach(p => {
+        lines.push(`<div class="log-line indent">• ${p.name}: $${p.price.toFixed(2)}</div>`);
+      });
+      
+      lines.push(`<div class="log-line error">✗ Validation errors: ${errors.length}</div>`);
+      errors.forEach(({ index, error }) => {
+        lines.push(`<div class="log-line indent">• Product ${index + 1} - ${error.field}: ${error.message}</div>`);
+        lines.push(`<div class="log-line indent indent">Attempted: ${JSON.stringify(error.attemptedValue)}</div>`);
+      });
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      lines.push(`<div class="log-line info">Result: Partial success - ${validProducts.length} valid, ${errors.length} invalid</div>`);
+      lines.push(`<div class="log-line indent">Use this pattern when you want to process what succeeded</div>`);
+      
+      output.innerHTML = lines.join('');
+    }
+
+    function handleProcessingReport() {
+      const orderIds = getOrderIds();
+      const output = document.getElementById('multi-output');
+      const lines = [];
+      
+      lines.push(`<div class="log-line info">→ Generating detailed processing report for ${orderIds.length} orders</div>`);
+      lines.push(`<div class="log-line">───────────────</div>`);
+      
+      const successful = [];
+      const failed = [];
+      
+      orderIds.forEach(id => {
+        const result = findProduct(id);
+        lines.push(`<div class="log-line">Processing order "${id}"...</div>`);
+        if (result.isOk()) {
+          successful.push(result.value);
+          lines.push(`<div class="log-line indent success">✓ Success</div>`);
+        } else {
+          failed.push({ id, error: result.error });
+          lines.push(`<div class="log-line indent error">✗ Failed: ${result.error.type}</div>`);
+        }
+      });
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      lines.push(`<div class="log-line">━━━ PROCESSING REPORT ━━━</div>`);
+      lines.push(`<div class="log-line">Total Orders Processed: ${orderIds.length}</div>`);
+      lines.push(`<div class="log-line">───────────────</div>`);
+      
+      lines.push(`<div class="log-line success">✓ SUCCESSFUL: ${successful.length}</div>`);
+      if (successful.length > 0) {
+        successful.forEach(p => {
+          lines.push(`<div class="log-line indent">• ${p.id}: ${p.name} - $${p.price.toFixed(2)}</div>`);
+        });
+      } else {
+        lines.push(`<div class="log-line indent">(none)</div>`);
+      }
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      lines.push(`<div class="log-line error">✗ FAILED: ${failed.length}</div>`);
+      if (failed.length > 0) {
+        failed.forEach(({ id, error }) => {
+          lines.push(`<div class="log-line indent">• ${id}: ${error.type}</div>`);
+          if (error.type === 'NotFoundError') {
+            lines.push(`<div class="log-line indent indent">Resource not found</div>`);
+          } else if (error.type === 'DatabaseError') {
+            lines.push(`<div class="log-line indent indent">${error.originalError}</div>`);
+          }
+        });
+      } else {
+        lines.push(`<div class="log-line indent">(none)</div>`);
+      }
+      
+      lines.push(`<div class="log-line">───────────────</div>`);
+      const successRate = ((successful.length / orderIds.length) * 100).toFixed(1);
+      lines.push(`<div class="log-line info">Success Rate: ${successRate}%</div>`);
+      lines.push(`<div class="log-line indent">Use this pattern for batch operations needing detailed metrics</div>`);
+      
+      output.innerHTML = lines.join('');
+    }
+
+    // Initialize with first example
+    handleSimpleAuth();
+  </script>
+</body>
+</html>
